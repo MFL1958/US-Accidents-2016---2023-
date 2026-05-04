@@ -1,12 +1,10 @@
 # US Accident Severity Prediction
 
-* This repository holds an attempt to apply a Random Forest classifier to predict accident severity using the [US Accidents (2016–2023)](https://www.kaggle.com/datasets/sobhanmoosavi/us-accidents/data) dataset from Kaggle.
+This repository holds an attempt to apply a Random Forest classifier to predict accident severity using the [US Accidents (2016–2023)](https://www.kaggle.com/datasets/sobhanmoosavi/us-accidents/data) dataset from Kaggle.
 
 ## Overview
 
-* The task is to use tabular features describing road, weather, and temporal conditions at the time of a US traffic accident to predict its severity on a scale of 1–4 (1 = least impact on traffic, 4 = most impact).
-* This repository formulates the problem as a multiclass classification task. A Random Forest classifier was trained on a 100,000-row stratified random sample of the full dataset. Preprocessing included temporal feature engineering, frequency encoding of high-cardinality categoricals, median/mode imputation, and class-weight balancing to address severe class imbalance.
-* The model achieved a weighted F1-score of approximately 0.8223 on the held-out test set. Class imbalance — Severity 2 accounts for ~70% of all records — makes this a challenging prediction problem, particularly for Severity 1 (< 1% of data).
+The task is to use tabular features describing road, weather, and temporal conditions at the time of a US traffic accident to predict its severity on a scale of 1–4 (1 = least impact on traffic, 4 = most impact). A Random Forest classifier was trained on a 100,000-row stratified random sample of the full dataset. Preprocessing included temporal feature engineering, frequency encoding of high-cardinality categoricals, median/mode imputation, and class-weight balancing to address severe class imbalance. The model achieved a weighted F1-score of approximately 0.8223 on the held-out test set. Class imbalance — Severity 2 accounts for ~70% of all records — makes this a challenging prediction problem, particularly for Severity 1 (< 1% of data).
 
 ## Summary of Workdone
 
@@ -30,8 +28,15 @@
 
 #### Data Visualization
 
-* Histograms of each numerical feature split by Severity class revealed that `Duration_min` and `Visibility(mi)` show the strongest distributional differences across severity levels — longer-duration and lower-visibility accidents skew toward higher severity.
+* Histograms of each numerical feature split by Severity class revealed that most of the numerical features do not have clear distributional differences. 
 * The class distribution bar chart confirms severe imbalance: Severity 2 dominates (~70%), while Severity 1 is extremely rare (~1%), motivating the use of class weighting.
+
+![Class Distribution](images/class_distribution.png)
+*The dataset is heavily imbalanced — Severity 2 accounts for ~70% of all records.*
+
+![Feature Distributions](images/feature_distributions_kde.png)
+*KDE plots of numerical features by severity class. Severity 2 and 3 show heavy 
+overlap across most features, consistent with the model's confusion matrix results.*
 
 ### Problem Formulation
 
@@ -57,12 +62,22 @@
 
 | Metric | Validation Set | Test Set |
 |---|---|---|
-| Accuracy | [0.8125] | [0.8091] |
-| Weighted F1 | [0.8260] | [0.8223] |
-| Macro F1 | [0.6039] | [0.6081] |
+| Accuracy | 0.8125 | 0.8091 |
+| Weighted F1 | 0.8260 | 0.8223 |
+| Macro F1 | 0.6039 | 0.6081 |
 
-* Confusion matrices for both the validation and test sets are saved as `confusion_matrix_val.png` and `confusion_matrix_test.png`.
 * The gap between weighted F1 and macro F1 quantifies how much the model struggles with rare classes (Severity 1 and 4).
+
+![Confusion Matrix - Validation](images/confusion_matrix_val.png)
+*Confusion matrix on the validation set. The dominant error is Severity 3 events 
+predicted as Severity 2 (1,565 misclassifications).*
+
+![Confusion Matrix - Test](images/confusion_matrix_test.png)
+*Confusion matrix on the held-out test set.*
+
+![Feature Importance](images/feature_importance.png)
+*Top 20 features by mean decrease in Gini impurity. Distance(mi), Year, and 
+Duration_min account for ~41% of total importance.*
 
 ### Conclusions
 
@@ -126,24 +141,6 @@ misclassifications. Another option is **cost-sensitive learning** — manually
 specifying a misclassification cost matrix where predicting Severity 2 for a true 
 Severity 4 event is penalized far more severely than predicting Severity 3 for it.
 
-**Exploiting the `Description` column**
-The free-text accident description was dropped during preprocessing because it 
-requires NLP. However, it almost certainly contains strong severity signal — phrases 
-like "overturned vehicle" or "minor fender bender" are direct indicators of 
-severity that no tabular feature can capture. A straightforward improvement would be 
-TF-IDF vectorization of the description combined with the existing tabular features. 
-A more powerful approach would be to fine-tune a small language model (e.g., 
-DistilBERT) on the description text alone and use its embeddings as additional 
-features.
-
-**Gradient boosting models**
-XGBoost and LightGBM consistently outperform Random Forest on tabular imbalanced 
-classification tasks. LightGBM in particular is designed for large datasets — it 
-trains significantly faster than sklearn's Random Forest and uses less memory, 
-making it viable on the full 7.7M-row dataset without sampling. A direct comparison 
-of Random Forest vs. XGBoost vs. LightGBM on identical train/test splits would be 
-a natural next step.
-
 **Training on the full dataset**
 This project trained on a 100,000-row sample due to WSL2 memory constraints. The 
 full dataset contains ~7.7M records, and rare classes (Severity 1: ~1%, Severity 4: 
@@ -151,21 +148,6 @@ full dataset contains ~7.7M records, and rare classes (Severity 1: ~1%, Severity
 improving recall on those classes the most. Google Colab with a high-RAM runtime 
 (up to 52GB) would allow full-dataset training without any code changes beyond 
 removing the sampling line.
-
-**Systematic hyperparameter tuning**
-The current hyperparameters (`n_estimators=100`, `max_depth=20`, 
-`min_samples_leaf=10`) were chosen based on established defaults and domain 
-reasoning, not empirical search. `RandomizedSearchCV` with 3-fold stratified 
-cross-validation over `max_depth`, `min_samples_leaf`, and `max_features` would 
-likely yield measurable gains, particularly for the minority classes.
-
-**Geospatial feature engineering**
-`Start_Lat` and `Start_Lng` appeared in the top 10 most important features despite 
-being raw coordinates, which a tree model can only exploit through arbitrary 
-threshold splits. Replacing them with engineered geospatial features — such as 
-clustering coordinates into accident hotspot regions, distance to the nearest 
-highway interchange, or urban/rural classification — would give the model more 
-structured geographic signal to work with.
 
 **Temporal drift analysis**
 `Year` was the second most important feature (importance = 0.123), which likely 
@@ -220,7 +202,7 @@ performance on rare classes that weighted F1 can mask.
 |---------------|------------|--------|
 | Accuracy      | 0.8125     | 0.8091 |
 | F1 (weighted) | 0.8260     | 0.8223 |
-| F1 (macro)    | 0.6039     | 0.6081 |
+| F1 (macro)    | 0.6039     | 0.6081 |---
 
 #### Per-Class Performance (Test Set)
 
