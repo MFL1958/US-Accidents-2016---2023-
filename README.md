@@ -31,10 +31,10 @@ The task is to use tabular features describing road, weather, and temporal condi
 * Histograms of each numerical feature split by Severity class revealed that most of the numerical features do not have clear distributional differences. 
 * The class distribution bar chart confirms severe imbalance: Severity 2 dominates (~70%), while Severity 1 is extremely rare (~1%), motivating the use of class weighting.
 
-![Class Distribution](images/class_distribution.png)
+![Class Distribution](class_distribution.png)
 *The dataset is heavily imbalanced — Severity 2 accounts for ~70% of all records.*
 
-![Feature Distributions](images/feature_distributions_kde.png)
+![Feature Distributions](feature_distributions_kde.png)
 *KDE plots of numerical features by severity class. Severity 2 and 3 show heavy 
 overlap across most features, consistent with the model's confusion matrix results.*
 
@@ -68,14 +68,14 @@ overlap across most features, consistent with the model's confusion matrix resul
 
 * The gap between weighted F1 and macro F1 quantifies how much the model struggles with rare classes (Severity 1 and 4).
 
-![Confusion Matrix - Validation](images/confusion_matrix_val.png)
+![Confusion Matrix - Validation](confusion_matrix_val.png)
 *Confusion matrix on the validation set. The dominant error is Severity 3 events 
 predicted as Severity 2 (1,565 misclassifications).*
 
-![Confusion Matrix - Test](images/confusion_matrix_test.png)
+![Confusion Matrix - Test](confusion_matrix_test.png)
 *Confusion matrix on the held-out test set.*
 
-![Feature Importance](images/feature_importance.png)
+![Feature Importance](feature_importance.png)
 *Top 20 features by mean decrease in Gini impurity. Distance(mi), Year, and 
 Duration_min account for ~41% of total importance.*
 
